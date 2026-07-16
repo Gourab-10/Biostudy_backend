@@ -1,0 +1,355 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BioSpark API",
+    "description": "The backend API for the BioSpark mobile application.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "email": { "type": "string" },
+          "displayName": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["student", "admin"]
+          },
+          "selectedClass": { "type": "integer" },
+          "avatarUrl": { "type": "string" },
+          "streak": { "type": "integer" },
+          "totalQuizzes": { "type": "integer" },
+          "averageScore": { "type": "integer" },
+          "pushToken": { "type": "string" },
+          "platform": { "type": "string" },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "redeemedCodes": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "Chapter": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "classNum": { "type": "integer" },
+          "number": { "type": "string" },
+          "name": { "type": "string" },
+          "topics": { "type": "integer" },
+          "pdfUrls": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "semester": { "type": "integer" },
+          "quizTimeLimit": { "type": "integer" },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "QuizQuestion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "classNum": { "type": "integer" },
+          "chapterId": { "type": "string" },
+          "text": { "type": "string" },
+          "options": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "correctIndex": { "type": "integer" },
+          "explanation": { "type": "string" },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FreeLecture": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "videoId": { "type": "string" },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccessCode": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "code": { "type": "string" },
+          "classNum": { "type": "integer" },
+          "chapterId": { "type": "string" },
+          "maxUses": { "type": "integer" },
+          "currentUses": { "type": "integer" },
+          "isActive": { "type": "boolean" },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "displayName"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "displayName": { "type": "string" },
+                  "selectedClass": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login user",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Logged in successfully" }
+        }
+      }
+    },
+    "/api/auth/verify": {
+      "get": {
+        "summary": "Verify authentication token",
+        "responses": {
+          "200": { "description": "Token is valid" }
+        }
+      }
+    },
+    "/api/users/profile": {
+      "get": {
+        "summary": "Get current user profile",
+        "responses": {
+          "200": { "description": "Returns user profile" }
+        }
+      },
+      "put": {
+        "summary": "Update current user profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": { "type": "string" },
+                  "selectedClass": { "type": "integer" },
+                  "avatarUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profile updated" }
+        }
+      }
+    },
+    "/api/chapters": {
+      "get": {
+        "summary": "List all chapters",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "classNum",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "A list of chapters" }
+        }
+      },
+      "post": {
+        "summary": "Create a new chapter",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Chapter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Chapter created" }
+        }
+      }
+    },
+    "/api/chapters/{id}": {
+      "put": {
+        "summary": "Update a chapter",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Chapter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Chapter updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a chapter",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Chapter deleted" }
+        }
+      }
+    },
+    "/api/quizzes/{chapterId}": {
+      "get": {
+        "summary": "Get quiz questions for a chapter",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chapterId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of quiz questions" }
+        }
+      }
+    },
+    "/api/lectures": {
+      "get": {
+        "summary": "Get free lectures",
+        "responses": {
+          "200": { "description": "List of lectures" }
+        }
+      }
+    },
+    "/api/access-codes": {
+      "get": {
+        "summary": "Get all access codes (Admin)",
+        "responses": {
+          "200": { "description": "List of access codes" }
+        }
+      },
+      "post": {
+        "summary": "Generate an access code (Admin)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Access code created" }
+        }
+      }
+    },
+    "/api/access-codes/redeem": {
+      "post": {
+        "summary": "Redeem an access code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Code successfully redeemed" }
+        }
+      }
+    }
+  }
+}

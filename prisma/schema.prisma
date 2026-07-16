@@ -1,0 +1,245 @@
+// prisma/schema.prisma
+// ─── BioSpark Database Schema ───
+// Mirrors the existing Firebase Firestore structure as relational tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ═══════════════════════════════════════════
+// Users
+// ═══════════════════════════════════════════
+
+enum UserRole {
+  admin
+  student
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  displayName   String
+  role          UserRole @default(student)
+  selectedClass Int      @default(11)
+  avatarUrl     String?
+  streak        Int      @default(0)
+  totalQuizzes  Int      @default(0)
+  averageScore  Int      @default(0)
+  pushToken     String?
+  platform      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  quizScores    QuizScore[]
+  progress      UserProgress[]
+  chatMessages  ChatMessage[]
+  redeemedCodes UserAccessCode[]
+  attendance    Attendance[]
+
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════
+// Chapters
+// ═══════════════════════════════════════════
+
+model Chapter {
+  id            String   @id @default(uuid())
+  classNum      Int
+  number        String   // e.g. "1", "2", "3A"
+  name          String
+  topics        Int      @default(0)
+  semester      Int      @default(1)
+  pdfUrls       String   @default("[]") // JSON array of PDF download URLs
+  quizTimeLimit Int?     // Optional quiz time limit in minutes
+  quizExpiresAt DateTime? // Optional expiration date for the quiz
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  quizQuestions QuizQuestion[]
+  quizScores    QuizScore[]
+  progress      UserProgress[]
+
+  @@map("chapters")
+}
+
+// ═══════════════════════════════════════════
+// Quiz Questions
+// ═══════════════════════════════════════════
+
+model QuizQuestion {
+  id           String   @id @default(uuid())
+  chapterId    String
+  classNum     Int
+  text         String
+  options      String   // JSON array of 4 options
+  correctIndex Int      // 0-3
+  explanation  String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_questions")
+}
+
+// ═══════════════════════════════════════════
+// Quiz Scores (per user, per quiz attempt)
+// ═══════════════════════════════════════════
+
+model QuizScore {
+  id             String   @id @default(uuid())
+  userId         String
+  chapterId      String
+  chapterName    String
+  score          Int
+  totalQuestions Int
+  accuracy       Int      // percentage 0-100
+  completedAt    DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_scores")
+}
+
+// ═══════════════════════════════════════════
+// User Progress (per chapter)
+// ═══════════════════════════════════════════
+
+model UserProgress {
+  id        String   @id @default(uuid())
+  userId    String
+  chapterId String
+  classNum  Int
+  progress  Float    @default(0) // 0.0 to 1.0
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+  @@map("user_progress")
+}
+
+// ═══════════════════════════════════════════
+// Chat Messages (AI Bio Mentor)
+// ═══════════════════════════════════════════
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  text      String
+  sender    String   // 'user' or 'ai'
+  time      String   // Formatted time string
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+// ═══════════════════════════════════════════
+// Free Lectures
+// ═══════════════════════════════════════════
+
+model FreeLecture {
+  id        String   @id @default(uuid())
+  title     String
+  videoId   String   // YouTube Video ID
+  createdAt DateTime @default(now())
+
+  @@map("free_lectures")
+}
+
+// ═══════════════════════════════════════════
+// Broadcast Notifications
+// ═══════════════════════════════════════════
+
+model BroadcastNotification {
+  id     String   @id @default(uuid())
+  title  String
+  body   String
+  icon   String   @default("📢")
+  sentBy String
+  sentAt DateTime @default(now())
+
+  @@map("broadcast_notifications")
+}
+
+// ═══════════════════════════════════════════
+// Access Codes
+// ═══════════════════════════════════════════
+
+model AccessCode {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  classNum    Int
+  chapterId   String?          // null = unlocks all chapters for classNum
+  maxUses     Int              @default(-1) // -1 = unlimited
+  currentUses Int              @default(0)
+  isActive    Boolean          @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  redeemedBy UserAccessCode[]
+
+  @@map("access_codes")
+}
+
+// ═══════════════════════════════════════════
+// Join table: User ↔ AccessCode (many-to-many)
+// ═══════════════════════════════════════════
+
+model UserAccessCode {
+  id           String   @id @default(uuid())
+  userId       String
+  accessCodeId String
+  redeemedAt   DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessCode AccessCode @relation(fields: [accessCodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, accessCodeId])
+  @@map("user_access_codes")
+}
+
+// ═══════════════════════════════════════════
+// Attendance
+// ═══════════════════════════════════════════
+
+model Attendance {
+  id        String           @id @default(uuid())
+  userId    String
+  classNum  Int              // 11 or 12
+  date      String           // "YYYY-MM-DD" format for easy grouping
+  status    AttendanceStatus @default(PRESENT)
+  remarks   String?          // optional note from admin
+  markedBy  String           // admin user ID who marked it
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])   // one record per user per day
+  @@map("attendance")
+}
