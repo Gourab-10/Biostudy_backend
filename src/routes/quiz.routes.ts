@@ -9,6 +9,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { cleanupExpiredQuizzes } from '../lib/cleanup';
 
 const router = Router();
 
@@ -18,6 +19,9 @@ const router = Router();
 
 router.get('/', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
+    // Clean up any expired quizzes in real-time
+    await cleanupExpiredQuizzes();
+
     const classNum = req.query.classNum ? parseInt(req.query.classNum as string) : undefined;
     const chapterId = req.query.chapterId as string | undefined;
 

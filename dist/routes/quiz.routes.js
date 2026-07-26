@@ -13,12 +13,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const auth_middleware_1 = require("../middleware/auth.middleware");
+const cleanup_1 = require("../lib/cleanup");
 const router = (0, express_1.Router)();
 // ═══════════════════════════════════════════
 // Get Quiz Questions (authenticated)
 // ═══════════════════════════════════════════
 router.get('/', auth_middleware_1.authenticate, async (req, res) => {
     try {
+        // Clean up any expired quizzes in real-time
+        await (0, cleanup_1.cleanupExpiredQuizzes)();
         const classNum = req.query.classNum ? parseInt(req.query.classNum) : undefined;
         const chapterId = req.query.chapterId;
         const where = {};
@@ -43,7 +46,7 @@ router.get('/', auth_middleware_1.authenticate, async (req, res) => {
 router.post('/', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin, async (req, res) => {
     try {
         const { chapterId, classNum, text, options, correctIndex, explanation } = req.body;
-        if (!chapterId || !text || !options || correctIndex === undefined || !explanation) {
+        if (!chapterId || !text || !options || correctIndex === undefined || explanation === undefined || explanation === null) {
             res.status(400).json({ error: 'chapterId, classNum, text, options, correctIndex, and explanation are required.' });
             return;
         }
@@ -51,10 +54,28 @@ router.post('/', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin,
             res.status(400).json({ error: 'options must be an array of exactly 4 strings.' });
             return;
         }
+        // Resolve the chapter: it can be either a UUID or a Chapter Number (e.g. "6")
+        let targetChapter = await prisma_1.default.chapter.findUnique({
+            where: { id: chapterId },
+        });
+        if (!targetChapter) {
+            // Try to find the chapter by number and classNum
+            const classVal = classNum ? parseInt(classNum) : 11;
+            targetChapter = await prisma_1.default.chapter.findFirst({
+                where: {
+                    classNum: classVal,
+                    number: String(chapterId).trim(),
+                },
+            });
+        }
+        if (!targetChapter) {
+            res.status(400).json({ error: `Chapter not found with ID or number "${chapterId}" for Class ${classNum || 11}. Please create the chapter first.` });
+            return;
+        }
         const question = await prisma_1.default.quizQuestion.create({
             data: {
-                chapterId,
-                classNum: classNum || 11,
+                chapterId: targetChapter.id,
+                classNum: classNum ? parseInt(classNum) : 11,
                 text,
                 options: JSON.stringify(options),
                 correctIndex,

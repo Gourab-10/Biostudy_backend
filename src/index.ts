@@ -6,6 +6,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { startCleanupInterval } from './lib/cleanup';
 
 // Load environment variables
 dotenv.config();
@@ -87,6 +88,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🚀 BioStudy Backend running on http://0.0.0.0:${PORT}`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
+  startCleanupInterval();
 });
 
 export default app;

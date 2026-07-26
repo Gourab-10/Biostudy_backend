@@ -10,6 +10,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const cleanup_1 = require("./lib/cleanup");
 // Load environment variables
 dotenv_1.default.config();
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
@@ -78,6 +79,7 @@ app.use((err, _req, res, _next) => {
 app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`🚀 BioStudy Backend running on http://0.0.0.0:${PORT}`);
     console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
+    (0, cleanup_1.startCleanupInterval)();
 });
 exports.default = app;
 //# sourceMappingURL=index.js.map
