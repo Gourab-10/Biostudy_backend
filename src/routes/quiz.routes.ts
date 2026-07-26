@@ -45,7 +45,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
   try {
     const { chapterId, classNum, text, options, correctIndex, explanation } = req.body;
 
-    if (!chapterId || !text || !options || correctIndex === undefined || !explanation) {
+    if (!chapterId || !text || !options || correctIndex === undefined || explanation === undefined || explanation === null) {
       res.status(400).json({ error: 'chapterId, classNum, text, options, correctIndex, and explanation are required.' });
       return;
     }
@@ -55,10 +55,31 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       return;
     }
 
+    // Resolve the chapter: it can be either a UUID or a Chapter Number (e.g. "6")
+    let targetChapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+
+    if (!targetChapter) {
+      // Try to find the chapter by number and classNum
+      const classVal = classNum ? parseInt(classNum) : 11;
+      targetChapter = await prisma.chapter.findFirst({
+        where: {
+          classNum: classVal,
+          number: String(chapterId).trim(),
+        },
+      });
+    }
+
+    if (!targetChapter) {
+      res.status(400).json({ error: `Chapter not found with ID or number "${chapterId}" for Class ${classNum || 11}. Please create the chapter first.` });
+      return;
+    }
+
     const question = await prisma.quizQuestion.create({
       data: {
-        chapterId,
-        classNum: classNum || 11,
+        chapterId: targetChapter.id,
+        classNum: classNum ? parseInt(classNum) : 11,
         text,
         options: JSON.stringify(options),
         correctIndex,
