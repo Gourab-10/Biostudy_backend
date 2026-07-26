@@ -14,17 +14,30 @@ import { authenticate, requireAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
-const mapChapter = (ch: any) => {
+const mapChapter = async (ch: any, activeCodes?: any[]) => {
   let parsedPdfUrls = [];
   try {
     parsedPdfUrls = ch.pdfUrls ? JSON.parse(ch.pdfUrls) : [];
   } catch(e) {}
-  return { ...ch, pdfUrls: parsedPdfUrls };
+
+  const codes = activeCodes || await prisma.accessCode.findMany({
+    where: { isActive: true },
+    select: { classNum: true, chapterId: true },
+  });
+
+  const hasRestrictingCode = codes.some(c => 
+    c.classNum === ch.classNum && 
+    (c.chapterId === null || c.chapterId === ch.id)
+  );
+
+  return { 
+    ...ch, 
+    pdfUrls: parsedPdfUrls,
+    requiresCode: hasRestrictingCode
+  };
 };
 
-// ═══════════════════════════════════════════
-// Get All Chapters (public or authenticated)
-// ═══════════════════════════════════════════
+
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -40,7 +53,14 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       orderBy,
     });
 
-    res.json({ chapters: chapters.map(mapChapter) });
+    const activeCodes = await prisma.accessCode.findMany({
+      where: { isActive: true },
+      select: { classNum: true, chapterId: true },
+    });
+
+    const mapped = await Promise.all(chapters.map(ch => mapChapter(ch, activeCodes)));
+
+    res.json({ chapters: mapped });
   } catch (error: any) {
     console.error('[Chapters] Get chapters error:', error);
     res.status(500).json({ error: 'Failed to fetch chapters.' });
@@ -65,7 +85,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    res.json({ chapter: mapChapter(chapter) });
+    res.json({ chapter: await mapChapter(chapter) });
   } catch (error: any) {
     console.error('[Chapters] Get chapter error:', error);
     res.status(500).json({ error: 'Failed to fetch chapter.' });
@@ -103,7 +123,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       },
     });
 
-    res.status(201).json({ chapter: mapChapter(chapter) });
+    res.status(201).json({ chapter: await mapChapter(chapter) });
   } catch (error: any) {
     console.error('[Chapters] Create chapter error:', error);
     res.status(500).json({ error: 'Failed to create chapter.' });
@@ -138,7 +158,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
       data: updateData,
     });
 
-    res.json({ chapter: mapChapter(chapter) });
+    res.json({ chapter: await mapChapter(chapter) });
   } catch (error: any) {
     console.error('[Chapters] Update chapter error:', error);
     res.status(500).json({ error: 'Failed to update chapter.' });
@@ -189,7 +209,7 @@ router.put('/:id/add-pdf', authenticate, requireAdmin, async (req: Request, res:
       data: { pdfUrls: JSON.stringify(updatedPdfUrls) },
     });
 
-    res.json({ chapter: mapChapter(updated) });
+    res.json({ chapter: await mapChapter(updated) });
   } catch (error: any) {
     console.error('[Chapters] Add PDF error:', error);
     res.status(500).json({ error: 'Failed to add PDF.' });
@@ -223,7 +243,7 @@ router.put('/:id/remove-pdf', authenticate, requireAdmin, async (req: Request, r
       data: { pdfUrls: JSON.stringify(updatedPdfUrls) },
     });
 
-    res.json({ chapter: mapChapter(updated) });
+    res.json({ chapter: await mapChapter(updated) });
   } catch (error: any) {
     console.error('[Chapters] Remove PDF error:', error);
     res.status(500).json({ error: 'Failed to remove PDF.' });
