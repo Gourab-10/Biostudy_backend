@@ -17,15 +17,15 @@ const router = (0, express_1.Router)();
 // ═══════════════════════════════════════════
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, displayName, selectedClass } = req.body;
-        if (!email || !password || !displayName) {
-            res.status(400).json({ error: 'email, password, and displayName are required.' });
+        const { phoneNumber, password, displayName, selectedClass, email } = req.body;
+        if (!phoneNumber || !password || !displayName) {
+            res.status(400).json({ error: 'phoneNumber, password, and displayName are required.' });
             return;
         }
         // Check if user already exists
-        const existing = await prisma_1.default.user.findUnique({ where: { email } });
+        const existing = await prisma_1.default.user.findUnique({ where: { phoneNumber } });
         if (existing) {
-            res.status(409).json({ error: 'An account with this email already exists.' });
+            res.status(409).json({ error: 'An account with this phone number already exists.' });
             return;
         }
         // Hash password
@@ -34,7 +34,8 @@ router.post('/register', async (req, res) => {
         // Create user
         const user = await prisma_1.default.user.create({
             data: {
-                email,
+                phoneNumber,
+                email: email || null,
                 passwordHash,
                 displayName,
                 selectedClass: selectedClass || 11,
@@ -49,6 +50,7 @@ router.post('/register', async (req, res) => {
             token,
             user: {
                 id: user.id,
+                phoneNumber: user.phoneNumber,
                 email: user.email,
                 displayName: user.displayName,
                 role: user.role,
@@ -70,21 +72,27 @@ router.post('/register', async (req, res) => {
 // ═══════════════════════════════════════════
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            res.status(400).json({ error: 'email and password are required.' });
+        const { phoneNumber, email, password } = req.body;
+        if (!password || (!phoneNumber && !email)) {
+            res.status(400).json({ error: 'phoneNumber/email and password are required.' });
             return;
         }
-        // Find user
-        const user = await prisma_1.default.user.findUnique({ where: { email } });
+        // Find user by phone number or email (backwards compatibility)
+        let user = null;
+        if (phoneNumber) {
+            user = await prisma_1.default.user.findUnique({ where: { phoneNumber } });
+        }
+        else if (email) {
+            user = await prisma_1.default.user.findFirst({ where: { email } });
+        }
         if (!user) {
-            res.status(401).json({ error: 'Invalid email or password.' });
+            res.status(401).json({ error: 'Invalid credentials.' });
             return;
         }
         // Verify password
         const valid = await bcrypt_1.default.compare(password, user.passwordHash);
         if (!valid) {
-            res.status(401).json({ error: 'Invalid email or password.' });
+            res.status(401).json({ error: 'Invalid credentials.' });
             return;
         }
         // Generate JWT
@@ -95,6 +103,7 @@ router.post('/login', async (req, res) => {
             token,
             user: {
                 id: user.id,
+                phoneNumber: user.phoneNumber,
                 email: user.email,
                 displayName: user.displayName,
                 role: user.role,
@@ -128,6 +137,7 @@ router.get('/verify', async (req, res) => {
             where: { id: decoded.userId },
             select: {
                 id: true,
+                phoneNumber: true,
                 email: true,
                 displayName: true,
                 role: true,

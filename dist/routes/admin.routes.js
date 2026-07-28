@@ -58,6 +58,7 @@ router.get('/users', async (req, res) => {
         if (search) {
             where.OR = [
                 { displayName: { contains: search, mode: 'insensitive' } },
+                { phoneNumber: { contains: search, mode: 'insensitive' } },
                 { email: { contains: search, mode: 'insensitive' } },
             ];
         }
@@ -66,6 +67,7 @@ router.get('/users', async (req, res) => {
             orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
+                phoneNumber: true,
                 email: true,
                 displayName: true,
                 role: true,
@@ -98,6 +100,7 @@ router.put('/users/:id/role', async (req, res) => {
             data: { role },
             select: {
                 id: true,
+                phoneNumber: true,
                 email: true,
                 displayName: true,
                 role: true,

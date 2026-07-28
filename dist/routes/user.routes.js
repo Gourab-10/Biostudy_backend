@@ -25,6 +25,7 @@ router.get('/profile', async (req, res) => {
             where: { id: req.userId },
             select: {
                 id: true,
+                phoneNumber: true,
                 email: true,
                 displayName: true,
                 role: true,
@@ -76,6 +77,7 @@ router.put('/profile', async (req, res) => {
             data: updateData,
             select: {
                 id: true,
+                phoneNumber: true,
                 email: true,
                 displayName: true,
                 role: true,

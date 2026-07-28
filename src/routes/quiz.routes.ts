@@ -330,12 +330,21 @@ router.put('/admin/:id', authenticate, requireAdmin, async (req: Request, res: R
 // ═══════════════════════════════════════════
 
 router.delete('/admin/:id', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  if (id.startsWith('mock-')) {
+    res.json({ message: 'Mock quiz deleted.' });
+    return;
+  }
   try {
     await prisma.quiz.delete({
-      where: { id: req.params.id as string },
+      where: { id },
     });
     res.json({ message: 'Quiz deleted successfully.' });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      res.json({ message: 'Quiz already deleted.' });
+      return;
+    }
     console.error('[Quiz Admin] Delete quiz error:', error);
     res.status(500).json({ error: 'Failed to delete quiz.' });
   }
@@ -390,12 +399,21 @@ router.post('/admin/:id/questions', authenticate, requireAdmin, async (req: Requ
 // ═══════════════════════════════════════════
 
 router.delete('/admin/questions/:qId', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  const qId = req.params.qId as string;
+  if (qId.startsWith('mock-')) {
+    res.json({ message: 'Mock question deleted.' });
+    return;
+  }
   try {
     await prisma.quizQuestion.delete({
-      where: { id: req.params.qId as string },
+      where: { id: qId },
     });
     res.json({ message: 'Question deleted successfully.' });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      res.json({ message: 'Question already deleted.' });
+      return;
+    }
     console.error('[Quiz Admin] Delete question error:', error);
     res.status(500).json({ error: 'Failed to delete question.' });
   }
@@ -494,12 +512,21 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
 // ═══════════════════════════════════════════
 
 router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  if (id.startsWith('mock-')) {
+    res.json({ message: 'Mock question deleted.' });
+    return;
+  }
   try {
     await prisma.quizQuestion.delete({
-      where: { id: req.params.id as string },
+      where: { id: id },
     });
     res.json({ message: 'Question deleted.' });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      res.json({ message: 'Question already deleted.' });
+      return;
+    }
     console.error('[Quiz] Delete legacy question error:', error);
     res.status(500).json({ error: 'Failed to delete question.' });
   }
