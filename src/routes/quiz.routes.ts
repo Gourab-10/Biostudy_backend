@@ -454,8 +454,8 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
   try {
     const { chapterId, classNum, text, options, correctIndex, explanation } = req.body;
 
-    if (!chapterId || !text || !options || correctIndex === undefined || explanation === undefined) {
-      res.status(400).json({ error: 'chapterId, text, options, correctIndex, and explanation are required.' });
+    if (!text || !options || correctIndex === undefined || explanation === undefined) {
+      res.status(400).json({ error: 'text, options, correctIndex, and explanation are required.' });
       return;
     }
 
@@ -464,9 +464,19 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       return;
     }
 
+    // Resolve chapterId: only link if it exists in the database and is a valid UUID
+    let resolvedChapterId = null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (chapterId && uuidRegex.test(chapterId)) {
+      const chapter = await prisma.chapter.findUnique({ where: { id: chapterId } });
+      if (chapter) {
+        resolvedChapterId = chapter.id;
+      }
+    }
+
     const question = await prisma.quizQuestion.create({
       data: {
-        chapterId,
+        chapterId: resolvedChapterId,
         classNum: classNum ? parseInt(classNum) : 11,
         text,
         options: JSON.stringify(options),
