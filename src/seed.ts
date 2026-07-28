@@ -50,9 +50,10 @@ async function main() {
   // ─── Create Admin User ───
   const adminPassword = await bcrypt.hash('admin123', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@biostudy.app' },
+    where: { phoneNumber: '9999999999' },
     update: {},
     create: {
+      phoneNumber: '9999999999',
       email: 'admin@biostudy.app',
       passwordHash: adminPassword,
       displayName: 'BioStudy Admin',
@@ -60,14 +61,15 @@ async function main() {
       selectedClass: 11,
     },
   });
-  console.log(`✅ Admin user created: ${admin.email}`);
+  console.log(`✅ Admin user created: ${admin.phoneNumber}`);
 
   // ─── Create Sample Student ───
   const studentPassword = await bcrypt.hash('student123', 12);
   const student = await prisma.user.upsert({
-    where: { email: 'student@biostudy.app' },
+    where: { phoneNumber: '8888888888' },
     update: {},
     create: {
+      phoneNumber: '8888888888',
       email: 'student@biostudy.app',
       passwordHash: studentPassword,
       displayName: 'Test Student',
@@ -75,7 +77,7 @@ async function main() {
       selectedClass: 11,
     },
   });
-  console.log(`✅ Student user created: ${student.email}`);
+  console.log(`✅ Student user created: ${student.phoneNumber}`);
 
   // ─── Generate Dummy PDF ───
   const uploadsDir = path.resolve(__dirname, '../uploads');

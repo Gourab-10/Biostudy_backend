@@ -29,7 +29,8 @@ enum AttendanceStatus {
 
 model User {
   id            String   @id @default(uuid())
-  email         String   @unique
+  phoneNumber   String   @unique
+  email         String?
   passwordHash  String
   displayName   String
   role          UserRole @default(student)
@@ -73,9 +74,36 @@ model Chapter {
   // Relations
   quizQuestions QuizQuestion[]
   quizScores    QuizScore[]
+  quizzes       Quiz[]
   progress      UserProgress[]
 
   @@map("chapters")
+}
+
+// ═══════════════════════════════════════════
+// Standalone Dynamic Quizzes
+// ═══════════════════════════════════════════
+
+model Quiz {
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  classNum        Int      @default(11) // 11, 12, or 0 (All)
+  chapterId       String?  // Optional link to chapter
+  durationMinutes Int      @default(15) // Timer limit in minutes
+  startsAt        DateTime @default(now()) // Start of time period
+  expiresAt       DateTime? // End of time period (null = no expiration)
+  isActive        Boolean  @default(true)
+  secretKey       String?  // Optional secret key to unlock/take the quiz
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  chapter         Chapter?       @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  questions       QuizQuestion[]
+  scores          QuizScore[]
+
+  @@map("quizzes")
 }
 
 // ═══════════════════════════════════════════
@@ -84,8 +112,9 @@ model Chapter {
 
 model QuizQuestion {
   id           String   @id @default(uuid())
-  chapterId    String
-  classNum     Int
+  quizId       String?
+  chapterId    String?
+  classNum     Int      @default(11)
   text         String
   options      String   // JSON array of 4 options
   correctIndex Int      // 0-3
@@ -93,7 +122,8 @@ model QuizQuestion {
   createdAt    DateTime @default(now())
 
   // Relations
-  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  quiz    Quiz?    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
   @@map("quiz_questions")
 }
@@ -105,16 +135,19 @@ model QuizQuestion {
 model QuizScore {
   id             String   @id @default(uuid())
   userId         String
-  chapterId      String
+  quizId         String?
+  chapterId      String?
   chapterName    String
   score          Int
   totalQuestions Int
   accuracy       Int      // percentage 0-100
+  timeTakenSec   Int?     // Time spent in seconds
   completedAt    DateTime @default(now())
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz    Quiz?    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
   @@map("quiz_scores")
 }
