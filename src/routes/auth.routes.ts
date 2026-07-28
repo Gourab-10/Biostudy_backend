@@ -81,24 +81,30 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { phoneNumber, password } = req.body;
+    const { phoneNumber, email, password } = req.body;
 
-    if (!phoneNumber || !password) {
-      res.status(400).json({ error: 'phoneNumber and password are required.' });
+    if (!password || (!phoneNumber && !email)) {
+      res.status(400).json({ error: 'phoneNumber/email and password are required.' });
       return;
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({ where: { phoneNumber } });
+    // Find user by phone number or email (backwards compatibility)
+    let user = null;
+    if (phoneNumber) {
+      user = await prisma.user.findUnique({ where: { phoneNumber } });
+    } else if (email) {
+      user = await prisma.user.findFirst({ where: { email } });
+    }
+
     if (!user) {
-      res.status(401).json({ error: 'Invalid phone number or password.' });
+      res.status(401).json({ error: 'Invalid credentials.' });
       return;
     }
 
     // Verify password
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      res.status(401).json({ error: 'Invalid phone number or password.' });
+      res.status(401).json({ error: 'Invalid credentials.' });
       return;
     }
 
