@@ -98,7 +98,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 
 router.post('/', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { classNum, number, name, topics, semester, quizTimeLimit, validityHours } = req.body;
+    const { classNum, number, name, topics, semester, quizTimeLimit, validityHours, subject } = req.body;
 
     if (!classNum || !number || !name) {
       res.status(400).json({ error: 'classNum, number, and name are required.' });
@@ -120,6 +120,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
         quizTimeLimit: quizTimeLimit || null,
         quizExpiresAt,
         pdfUrls: JSON.stringify([]),
+        subject: subject || 'biology',
       },
     });
 
@@ -136,7 +137,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 
 router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { classNum, number, name, topics, semester, quizTimeLimit, validityHours } = req.body;
+    const { classNum, number, name, topics, semester, quizTimeLimit, validityHours, subject } = req.body;
 
     const updateData: any = {};
     if (classNum !== undefined) updateData.classNum = classNum;
@@ -145,6 +146,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
     if (topics !== undefined) updateData.topics = topics;
     if (semester !== undefined) updateData.semester = semester;
     if (quizTimeLimit !== undefined) updateData.quizTimeLimit = quizTimeLimit;
+    if (subject !== undefined) updateData.subject = subject;
     if (validityHours !== undefined) {
       if (Number(validityHours) > 0) {
         updateData.quizExpiresAt = new Date(Date.now() + Number(validityHours) * 60 * 60 * 1000);

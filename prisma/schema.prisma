@@ -68,6 +68,7 @@ model Chapter {
   pdfUrls       String   @default("[]") // JSON array of PDF download URLs
   quizTimeLimit Int?     // Optional quiz time limit in minutes
   quizExpiresAt DateTime? // Optional expiration date for the quiz
+  subject       String   @default("biology")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -276,4 +277,26 @@ model Attendance {
 
   @@unique([userId, date])   // one record per user per day
   @@map("attendance")
+}
+
+// ═══════════════════════════════════════════
+// Store Items (Dynamic Courses/Packages)
+// ═══════════════════════════════════════════
+
+model StoreItem {
+  id             String   @id @default(uuid())
+  title          String
+  classLabel     String
+  badge          String?
+  rating         String   @default("4.5")
+  enrolled       String   @default("0")
+  instructor     String
+  price          String
+  color          String   @default("#10B981")
+  whatsappNumber String?  // The WhatsApp number to redirect to
+  whatsappText   String?  // Pre-filled WhatsApp message
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("store_items")
 }

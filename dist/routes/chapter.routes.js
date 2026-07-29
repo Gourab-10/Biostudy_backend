@@ -84,7 +84,7 @@ router.get('/:id', async (req, res) => {
 // ═══════════════════════════════════════════
 router.post('/', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin, async (req, res) => {
     try {
-        const { classNum, number, name, topics, semester, quizTimeLimit, validityHours } = req.body;
+        const { classNum, number, name, topics, semester, quizTimeLimit, validityHours, subject } = req.body;
         if (!classNum || !number || !name) {
             res.status(400).json({ error: 'classNum, number, and name are required.' });
             return;
@@ -103,6 +103,7 @@ router.post('/', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin,
                 quizTimeLimit: quizTimeLimit || null,
                 quizExpiresAt,
                 pdfUrls: JSON.stringify([]),
+                subject: subject || 'biology',
             },
         });
         res.status(201).json({ chapter: await mapChapter(chapter) });
@@ -117,7 +118,7 @@ router.post('/', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin,
 // ═══════════════════════════════════════════
 router.put('/:id', auth_middleware_1.authenticate, auth_middleware_1.requireAdmin, async (req, res) => {
     try {
-        const { classNum, number, name, topics, semester, quizTimeLimit, validityHours } = req.body;
+        const { classNum, number, name, topics, semester, quizTimeLimit, validityHours, subject } = req.body;
         const updateData = {};
         if (classNum !== undefined)
             updateData.classNum = classNum;
@@ -131,6 +132,8 @@ router.put('/:id', auth_middleware_1.authenticate, auth_middleware_1.requireAdmi
             updateData.semester = semester;
         if (quizTimeLimit !== undefined)
             updateData.quizTimeLimit = quizTimeLimit;
+        if (subject !== undefined)
+            updateData.subject = subject;
         if (validityHours !== undefined) {
             if (Number(validityHours) > 0) {
                 updateData.quizExpiresAt = new Date(Date.now() + Number(validityHours) * 60 * 60 * 1000);

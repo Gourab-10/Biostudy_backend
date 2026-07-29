@@ -25,6 +25,7 @@ const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 const notes_routes_1 = __importDefault(require("./routes/notes.routes"));
 const attendance_routes_1 = __importDefault(require("./routes/attendance.routes"));
+const store_routes_1 = __importDefault(require("./routes/store.routes"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // ═══════════════════════════════════════════
@@ -60,6 +61,7 @@ app.use('/api/upload', upload_routes_1.default);
 app.use('/api/admin', admin_routes_1.default);
 app.use('/api/notes', notes_routes_1.default);
 app.use('/api/attendance', attendance_routes_1.default);
+app.use('/api/store', store_routes_1.default);
 // Health check
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
