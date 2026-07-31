@@ -8,7 +8,8 @@ const router = Router();
 // Fetch the latest leaderboard for a specific class
 router.get('/:classId', async (req: Request, res: Response) => {
   try {
-    const classId = parseInt(req.params.classId, 10);
+    const classIdStr = typeof req.params.classId === 'string' ? req.params.classId : String(req.params.classId);
+    const classId = parseInt(classIdStr, 10);
     if (isNaN(classId)) {
       return res.status(400).json({ error: 'Invalid class ID' });
     }
@@ -32,7 +33,7 @@ router.get('/:classId', async (req: Request, res: Response) => {
       columns: JSON.parse(leaderboard.columns),
       sortByColumn: leaderboard.sortByColumn,
       createdAt: leaderboard.createdAt,
-      students: leaderboard.students.map(s => ({
+      students: leaderboard.students.map((s: any) => ({
         studentName: s.studentName,
         scores: JSON.parse(s.scores),
       })),
@@ -79,7 +80,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       columns: JSON.parse(newLeaderboard.columns),
       sortByColumn: newLeaderboard.sortByColumn,
       createdAt: newLeaderboard.createdAt,
-      students: newLeaderboard.students.map(s => ({
+      students: newLeaderboard.students.map((s: any) => ({
         studentName: s.studentName,
         scores: JSON.parse(s.scores),
       })),
