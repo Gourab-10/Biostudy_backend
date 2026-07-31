@@ -300,3 +300,34 @@ model StoreItem {
 
   @@map("store_items")
 }
+
+// ═══════════════════════════════════════════
+// Leaderboards
+// ═══════════════════════════════════════════
+
+model Leaderboard {
+  id           String   @id @default(uuid())
+  classId      Int
+  topicName    String
+  passMarks    Int      @default(0)
+  columns      String   // JSON string of columns e.g. '["Math", "Physics", "Total"]'
+  sortByColumn String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  students     LeaderboardStudent[]
+
+  @@map("leaderboards")
+}
+
+model LeaderboardStudent {
+  id            String      @id @default(uuid())
+  leaderboardId String
+  studentName   String
+  scores        String      // JSON string of scores e.g. '{"Math": 80, "Physics": 90, "Total": 170}'
+  
+  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+
+  @@map("leaderboard_students")
+}
+
