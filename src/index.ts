@@ -24,6 +24,7 @@ import adminRoutes from './routes/admin.routes';
 import notesRoutes from './routes/notes.routes';
 import attendanceRoutes from './routes/attendance.routes';
 import storeRoutes from './routes/store.routes';
+import leaderboardRoutes from './routes/leaderboard.routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -80,6 +81,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/store', storeRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
