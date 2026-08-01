@@ -96,7 +96,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 // Delete a leaderboard event (Admin only)
 router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = typeof req.params.id === 'string' ? req.params.id : String(req.params.id);
     await prisma.leaderboard.delete({
       where: { id },
     });

@@ -105,6 +105,12 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       return;
     }
 
+    const parsedClassNum = parseInt(String(classNum), 10);
+    if (isNaN(parsedClassNum)) {
+      res.status(400).json({ error: 'classNum must be a valid integer.' });
+      return;
+    }
+
     let quizExpiresAt = null;
     if (validityHours && Number(validityHours) > 0) {
       quizExpiresAt = new Date(Date.now() + Number(validityHours) * 60 * 60 * 1000);
@@ -112,12 +118,12 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 
     const chapter = await prisma.chapter.create({
       data: {
-        classNum,
+        classNum: parsedClassNum,
         number: String(number),
-        name,
-        topics: topics || 0,
-        semester: semester || 1,
-        quizTimeLimit: quizTimeLimit || null,
+        name: String(name),
+        topics: topics ? parseInt(String(topics), 10) : 0,
+        semester: semester ? parseInt(String(semester), 10) : 1,
+        quizTimeLimit: quizTimeLimit !== undefined && quizTimeLimit !== null && quizTimeLimit !== '' ? parseInt(String(quizTimeLimit), 10) : null,
         quizExpiresAt,
         pdfUrls: JSON.stringify([]),
         subject: subject || 'biology',
@@ -140,13 +146,13 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
     const { classNum, number, name, topics, semester, quizTimeLimit, validityHours, subject } = req.body;
 
     const updateData: any = {};
-    if (classNum !== undefined) updateData.classNum = classNum;
+    if (classNum !== undefined) updateData.classNum = parseInt(String(classNum), 10);
     if (number !== undefined) updateData.number = String(number);
-    if (name !== undefined) updateData.name = name;
-    if (topics !== undefined) updateData.topics = topics;
-    if (semester !== undefined) updateData.semester = semester;
-    if (quizTimeLimit !== undefined) updateData.quizTimeLimit = quizTimeLimit;
-    if (subject !== undefined) updateData.subject = subject;
+    if (name !== undefined) updateData.name = String(name);
+    if (topics !== undefined) updateData.topics = parseInt(String(topics), 10);
+    if (semester !== undefined) updateData.semester = parseInt(String(semester), 10);
+    if (quizTimeLimit !== undefined) updateData.quizTimeLimit = (quizTimeLimit !== null && quizTimeLimit !== '') ? parseInt(String(quizTimeLimit), 10) : null;
+    if (subject !== undefined) updateData.subject = String(subject);
     if (validityHours !== undefined) {
       if (Number(validityHours) > 0) {
         updateData.quizExpiresAt = new Date(Date.now() + Number(validityHours) * 60 * 60 * 1000);
