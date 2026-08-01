@@ -116,18 +116,20 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       quizExpiresAt = new Date(Date.now() + Number(validityHours) * 60 * 60 * 1000);
     }
 
+    const chapterData: any = {
+      classNum: parsedClassNum,
+      number: String(number),
+      name: String(name),
+      topics: topics ? parseInt(String(topics), 10) : 0,
+      semester: semester ? parseInt(String(semester), 10) : 1,
+      quizTimeLimit: quizTimeLimit !== undefined && quizTimeLimit !== null && quizTimeLimit !== '' ? parseInt(String(quizTimeLimit), 10) : null,
+      quizExpiresAt,
+      pdfUrls: JSON.stringify([]),
+      subject: subject || 'biology',
+    };
+
     const chapter = await prisma.chapter.create({
-      data: {
-        classNum: parsedClassNum,
-        number: String(number),
-        name: String(name),
-        topics: topics ? parseInt(String(topics), 10) : 0,
-        semester: semester ? parseInt(String(semester), 10) : 1,
-        quizTimeLimit: quizTimeLimit !== undefined && quizTimeLimit !== null && quizTimeLimit !== '' ? parseInt(String(quizTimeLimit), 10) : null,
-        quizExpiresAt,
-        pdfUrls: JSON.stringify([]),
-        subject: subject || 'biology',
-      },
+      data: chapterData,
     });
 
     res.status(201).json({ chapter: await mapChapter(chapter) });
