@@ -395,6 +395,20 @@ router.post('/admin/:id/questions', authenticate, requireAdmin, async (req: Requ
 });
 
 // ═══════════════════════════════════════════
+// ADMIN: Delete All Questions
+// ═══════════════════════════════════════════
+
+router.delete('/admin/questions/all', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await prisma.quizQuestion.deleteMany({});
+    res.json({ message: `Successfully deleted ${result.count} questions.` });
+  } catch (error: any) {
+    console.error('[Quiz Admin] Delete all questions error:', error);
+    res.status(500).json({ error: 'Failed to delete all questions.' });
+  }
+});
+
+// ═══════════════════════════════════════════
 // ADMIN: Delete Question
 // ═══════════════════════════════════════════
 
